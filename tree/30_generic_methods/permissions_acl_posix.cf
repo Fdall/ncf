@@ -1,0 +1,80 @@
+#####################################################################################
+# Copyright 2013 Normation SAS
+#####################################################################################
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, Version 3.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#####################################################################################
+
+# @name Permissions acl POSIX
+# @description Verify if a directory has the right permissions non recursively
+#
+# @parameter path      Path of the file or directory
+# @parameter user_owner      Owner acls, like: bob:rwx, alice:---
+# @parameter group_owner     Group owner acls, like: wheel:rwx, anon:---
+# @parameter user      User acls, comma separeted, like: bob:rwx, alice:---
+# @parameter group     Group acls, comma separeted, like: wheel:rwx, anon:---
+# @parameter mask      Mask: like rwx
+# @parameter other     Other acls, like --x
+# 
+# @class_prefix permissions_acl
+# @class_parameter path
+
+bundle agent permissions_acl_posix(path, user_owner, group_owner, user, group, mask, other)
+{
+  vars:
+      "old_class_prefix"    string => canonify("permissions_acl_${path}");
+      "args"                 slist => { "${path}", "${user_owner}", "${group_owner}", "${user}", "${group}", "${mask}", "${other}" };
+      "report_param"        string => join("_", args);
+      "full_class_prefix"   string => canonify("permissions_acl_${report_param}");
+      "class_prefix"        string => string_head("${full_class_prefix}", "1000");
+
+      "user_owner_trimmed"  string => regex_replace("${user_owner}", " ", "", "g");
+      "group_owner_trimmed" string => regex_replace("${group_owner}", " ", "", "g");
+      "user_trimmed"        string => regex_replace("${user}", " ", "", "g");
+      "group_trimmed"       string => regex_replace("${group}", " ", "", "g");
+      "mask_trimmed"        string => regex_replace("${mask}", " ", "", "g");
+      "other_trimmed"       string => regex_replace("${other}", " ", "", "g");
+
+      "user_owner_acls"     string => "user:*:${user_owner_trimmed}";
+      "group_owner_acls"    string => "group:*:${group_owner_trimmed}";
+      "user_acls"           slist  => maplist("user:${this}", splitstring("${user_trimmed}",",","99999999999"));
+      "group_acls"          slist  => maplist("group:${this}", splitstring("${group_trimmed}",",","99999999999"));
+      "mask_acls"          string  => "mask:${mask_trimmed}";
+      "other_acls"          string => "all:${other_trimmed}";
+  files:
+      "${path}"
+        #perms => mog("666", "vagrant", "vagrant"),
+        file_select  => plain,
+        acl => acl_posix("${user_owner_acls}", "${group_owner_acls}", @{user_acls}, @{group_acls}, "${mask_acls}", "${other_acls}"),
+        classes => classes_generic_two("${old_class_prefix}", "${class_prefix}");
+
+  methods:
+     any::
+        "report" usebundle => _log_v3("Ensure POSIX acl owner:${user_owner}, group owner:${group_owner}, user:${user}, group:${group}, mask:${mask} and other:${other} on file ${path}", "${path}", "${old_class_prefix}", "${class_prefix}", @{args});
+
+}
+
+body acl acl_posix(user_owner_acls, group_owner_acls, user_acls, group_acls, mask_acls, other_acls)
+{
+      acl_method => "overwrite";
+      acl_type   => "posix";
+      aces       => {
+        "${user_owner_acls}",
+        @{user_acls},
+        "${group_owner_acls}",
+        @{group_acls},
+        "${mask_acls}",
+        "${other_acls}"
+      };
+}
