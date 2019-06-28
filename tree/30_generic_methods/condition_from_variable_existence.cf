@@ -49,5 +49,13 @@ bundle agent condition_from_variable_existence(condition_prefix, variable_name)
       "success" usebundle => _classes_success("${old_class_prefix}");
       "success" usebundle => _classes_success("${class_prefix}");
 
+      "report_info_true"
+        usebundle  => _log_v3_mode("log_info", "Variable ${variable_name} was defined, ${condition_prefix}_true defined", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${condition_prefix}_true";
+
+      "report_info_false"
+        usebundle  => _log_v3_mode("log_info", "Variable ${variable_name} could not be found, ${condition_prefix}_false defined", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${condition_prefix}_false";
+
       "report"  usebundle => _log_v3("Create the condition ${condition_prefix}_{true,false} from the existence of variable ${variable_name}", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args});
 }

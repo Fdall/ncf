@@ -72,5 +72,13 @@ bundle agent condition_from_expression_persistent(condition_prefix, condition_ex
       "success" usebundle => _classes_success("${old_class_prefix}");
       "success" usebundle => _classes_success("${class_prefix}");
 
+      "report_info_true"
+        usebundle  => _log_v3_mode("log_info", "Expression ${condition_expression} was valid, persistent condition ${condition_prefix}_true defined", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${condition_prefix}_true";
+
+      "report_info_false"
+        usebundle  => _log_v3_mode("log_info", "Expression ${condition_expression} was invalid, persistent condition ${condition_prefix}_false defined", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${condition_prefix}_false";
+
       "report"  usebundle => _log_v3("Create the persistent condition ${condition_prefix}_{true,false} with ${condition_expression}", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args});
 }

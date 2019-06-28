@@ -47,5 +47,13 @@ bundle agent condition_from_variable_match(condition_prefix, variable_name, expe
       "success" usebundle => _classes_success("${class_prefix}"),
         ifvarclass => "var_exists";
 
+      "report_info_true"
+        usebundle  => _log_v3_mode("log_info", "Variable ${variable_name} was defined and valued as expected, condition ${condition_prefix}_true defined", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${condition_prefix}_true";
+
+      "report_info_false"
+        usebundle  => _log_v3_mode("log_info", "Variable ${variable_name} could not be found or its value was not as expected, condition ${condition_prefix}_false defined", "${condition_prefix}", "${old_class_prefix}", "${class_prefix}", @{args}),
+        ifvarclass => "${condition_prefix}_false";
+
       "report"  usebundle => _log("Create the condition ${condition_prefix}_{true,false} from the result of regex: /${expected_match}/ on variable ${variable_name}", "${old_class_prefix}", "${class_prefix}", @{args});
 }

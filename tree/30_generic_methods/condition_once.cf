@@ -76,24 +76,20 @@ bundle agent condition_once(condition)
     set_ok::
       "success" usebundle => _classes_repaired("${old_class_prefix}");
       "success" usebundle => _classes_repaired("${class_prefix}");
+      "report"  usebundle => _log_v3("The condition ${c_condition} was define for this run only", "${condition}", "${old_class_prefix}", "${class_prefix}", @{args});
 
     pass3.reserved.!set_ok::
       "failure" usebundle => _classes_failure("${old_class_prefix}");
       "failure" usebundle => _classes_failure("${class_prefix}");
+      "report"  usebundle => _log_v3("The condition ${c_condition} was reserved but not defined, this should not happend, skipping", "${condition}", "${old_class_prefix}", "${class_prefix}", @{args});
 
     pass3.(already_set|already_reserved)::
       "success" usebundle => _classes_success("${old_class_prefix}");
       "success" usebundle => _classes_success("${class_prefix}");
+      "report"  usebundle => _log_v3("The condition ${c_condition} was already set before, skipping", "${condition}", "${old_class_prefix}", "${class_prefix}", @{args});
 
     pass3.already_reserved::
-      "disable_reporting_${class_prefix}"
-                usebundle => disable_reporting;
-      "failure" usebundle => _classes_failure("temp_${old_class_prefix}_warn");
-      "failure" usebundle => _classes_failure("temp_${class_prefix}_warn");
-      "report"  usebundle => _log_v3("The '${c_condition}' condition was reserved but not set, this is unexpected", "${condition}", "temp_${old_class_prefix}_warn", "temp_${class_prefix}_warn", @{args});
-      "reenable_reporting_${class_prefix}"
-                usebundle => enable_reporting,
-                       if => "should_report";
+      "report"  usebundle => _log_v3_mode("loging", "The '${c_condition}' condition was reserved but not set, this is unexpected", "${condition}", "${old_class_prefix}", "${class_prefix}", @{args});
 
     pass3::
       "report"  usebundle => _log_v3("Create the condition ${c_condition} once", "${condition}", "${old_class_prefix}", "${class_prefix}", @{args});
